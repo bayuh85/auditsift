@@ -1,0 +1,36 @@
+# Example gate. The sample app is supposed to fail --fail-on high.
+# Run it from the Actions tab, or copy it and switch the trigger to
+# pull_request when you want the same gate on your own repository.
+name: auditsift sarif
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install auditsift
+        run: pip install .
+
+      - name: Audit the sample app
+        id: audit
+        run: >
+          auditsift audit examples/flask-notes
+          --offline --fail-on high --out results
+
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results/auditsift.sarif
